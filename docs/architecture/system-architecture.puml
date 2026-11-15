@@ -50,8 +50,8 @@ package "3. Core Microservices Mesh — Why: Decoupled Fast-Path Write (<15ms P9
 ' TIER 3: TRANSACTIONAL LEDGER & EVENT BACKBONE
 ' ==========================================
 package "4. ACID Ledger & Durable Event Backbone — Why: Zero Data Loss & Asynchronous Decoupling" as EventPkg #FCE7F3 {
-    database "**PostgreSQL 17 HA Cluster**\n//Role: Authoritative ACID Transactional Store//\n• **Why**: Provides rock-solid relational integrity\n• **Tables**: `account_balances`, `ledger_entries`,\n  and `outbox_events` (polled via SKIP LOCKED)" as Postgres #A7F3D0
-    queue "**Apache Kafka Cluster (KRaft)**\n//Role: High-Throughput Durable Event Backbone//\n• **Why**: Buffers millions of events/sec & decouples\n  fast OLTP writes from heavy downstream analytics\n• **Topics**: `ariel.transactions.validated`,\n  `ariel.events.raw`, `ariel.dlq` (Dead Letter Queue)" as Kafka #F9A8D4
+    database "**PostgreSQL 17 HA Cluster**\n//Role: Authoritative ACID Transactional Store//\n• **Why**: Provides rock-solid relational integrity\n• **Tables**: ""account_balances"", ""ledger_entries"",\n  and ""outbox_events"" (polled via SKIP LOCKED)" as Postgres #A7F3D0
+    queue "**Apache Kafka Cluster (KRaft)**\n//Role: High-Throughput Durable Event Backbone//\n• **Why**: Buffers millions of events/sec & decouples\n  fast OLTP writes from heavy downstream analytics\n• **Topics**: ""ariel.transactions.validated"",\n  ""ariel.events.raw"", ""ariel.dlq"" (Dead Letter Queue)" as Kafka #F9A8D4
     component "**Stream Processor Service** (Port 8084)\n//Role: Async Event Consumer & Polyglot Router//\n• **Why**: Transforms raw event streams into analytical\n  projections and fans out bulk writes in parallel\n• **Features**: Micro-batching, rolling window rollups,\n  non-blocking retries & poison-pill DLQ isolation\n• **Tech**: Java 25 Stream Gatherers (windowFixed)\n  + StructuredTaskScope parallel sink writers" as StreamSvc #BFDBFE
 }
 
@@ -60,7 +60,7 @@ package "4. ACID Ledger & Durable Event Backbone — Why: Zero Data Loss & Async
 ' ==========================================
 package "5. Polyglot Big Data Layer — Why: Purpose-Built Storage Engines for Massive Data Volumes" as DataPkg #ECFDF5 {
     database "**Apache Iceberg (S3 / MinIO)**\n//Role: Petabyte Cold Data Lakehouse//\n• **Why**: Low-cost long-term compliance archival\n• **Use Case**: Historical batch reprocessing\n  and AI/ML fraud model training over Parquet files" as Iceberg #A7F3D0
-    database "**ScyllaDB / Apache Cassandra**\n//Role: High-Velocity Time-Series Store//\n• **Why**: Handles millions of raw write IOPS\n  without lock contention\n• **Use Case**: Raw audit trail & device telemetry\n  partitioned by `(tenant_id, bucket_day)`" as Scylla #6EE7B7
+    database "**ScyllaDB / Apache Cassandra**\n//Role: High-Velocity Time-Series Store//\n• **Why**: Handles millions of raw write IOPS\n  without lock contention\n• **Use Case**: Raw audit trail & device telemetry\n  partitioned by ""(tenant_id, bucket_day)""" as Scylla #6EE7B7
     database "**ClickHouse OLAP Cluster**\n//Role: Real-Time Columnar Analytics Engine//\n• **Why**: Scans billions of rows in milliseconds\n• **Use Case**: Live tenant revenue, P95/P99 risk scores,\n  and real-time fraud trend aggregations" as ClickHouse #34D399
 }
 
