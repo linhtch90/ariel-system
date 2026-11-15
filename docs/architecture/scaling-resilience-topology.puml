@@ -1,0 +1,91 @@
+@startuml scaling-resilience-topology
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam defaultFontName "Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 12
+skinparam ArrowColor #334155
+skinparam ArrowFontColor #1E293B
+skinparam ArrowFontSize 11
+skinparam PackageBorderColor #64748B
+skinparam RectangleBorderColor #475569
+skinparam ComponentBorderColor #334155
+skinparam DatabaseBorderColor #334155
+skinparam QueueBorderColor #334155
+skinparam nodesep 45
+skinparam ranksep 45
+skinparam padding 6
+
+title **Ariel System — Multi-AZ High Availability, Resilience & Horizontal Scaling Topology**\n
+
+rectangle "Multi-AZ Production Kubernetes Cluster (99.99%+ Availability SLA)" as Cluster #F8FAFC {
+
+    ' ==========================================
+    ' TOP INGRESS & TRAFFIC DISTRIBUTION
+    ' ==========================================
+    component "**Global Multi-AZ Ingress & Load Balancer**\nHealth-Checked Cross-Zone Traffic Distribution + TLS 1.3 Termination" as GlobalLB #CBD5E1
+
+    ' ==========================================
+    ' 3 AVAILABILITY ZONES (PARALLEL VERTICAL STACKS)
+    ' ==========================================
+    package "Availability Zone A (Primary Write AZ)" as AZA #EFF6FF {
+        component "**Stateless API Tier (AZ-A)**\n• Edge Gateway & Ingestion Pods\n• Risk Engine, Ledger & Query Pods\n*(Java 25 Virtual Threads + ZGC)*" as ComputeA #93C5FD
+        component "**Resilience4j Pod Guard (AZ-A)**\n• CircuitBreaker + TimeLimiter\n• SemaphoreBulkhead + Jitter Retry" as ResA #FDE68A
+        queue "**Kafka Broker 1 (AZ-A)**\n+ Stream Processor Worker Pods" as KafkaA #F9A8D4
+        database "**Stateful Data Primary (AZ-A)**\n• PostgreSQL 17 Primary (RW)\n• Redis 8 Master Shard\n• ScyllaDB & ClickHouse Shard 1" as DataA #6EE7B7
+
+        ComputeA -down-> ResA : Outbound Calls Protected
+        ResA -down-> KafkaA : Async Event Publish & Consume
+        KafkaA -down-> DataA : Transactional & OLAP Persistence
+    }
+
+    package "Availability Zone B (Sync Standby AZ)" as AZB #EFF6FF {
+        component "**Stateless API Tier (AZ-B)**\n• Edge Gateway & Ingestion Pods\n• Risk Engine, Ledger & Query Pods\n*(Java 25 Virtual Threads + ZGC)*" as ComputeB #93C5FD
+        component "**Resilience4j Pod Guard (AZ-B)**\n• CircuitBreaker + TimeLimiter\n• SemaphoreBulkhead + Jitter Retry" as ResB #FDE68A
+        queue "**Kafka Broker 2 (AZ-B)**\n+ Stream Processor Worker Pods" as KafkaB #F9A8D4
+        database "**Stateful Sync Standby (AZ-B)**\n• PostgreSQL 17 Sync Standby (RPO=0)\n• Redis 8 Replica + Sentinel/Cluster\n• ScyllaDB & ClickHouse Shard 2" as DataB #6EE7B7
+
+        ComputeB -down-> ResB : Outbound Calls Protected
+        ResB -down-> KafkaB : Async Event Publish & Consume
+        KafkaB -down-> DataB : Standby Sync & Local Read
+    }
+
+    package "Availability Zone C (Quorum & Read AZ)" as AZC #EFF6FF {
+        component "**Stateless API Tier (AZ-C)**\n• Edge Gateway & Ingestion Pods\n• Risk Engine, Ledger & Query Pods\n*(Java 25 Virtual Threads + ZGC)*" as ComputeC #93C5FD
+        component "**Resilience4j Pod Guard (AZ-C)**\n• CircuitBreaker + TimeLimiter\n• SemaphoreBulkhead + Jitter Retry" as ResC #FDE68A
+        queue "**Kafka Broker 3 (AZ-C)**\n+ Stream Processor Worker Pods" as KafkaC #F9A8D4
+        database "**Stateful Read Replica (AZ-C)**\n• PostgreSQL 17 Async Read Replica\n• Redis 8 Read Replica\n• ScyllaDB & ClickHouse Shard 3" as DataC #6EE7B7
+
+        ComputeC -down-> ResC : Outbound Calls Protected
+        ResC -down-> KafkaC : Async Event Publish & Consume
+        KafkaC -down-> DataC : CQRS Read Offload
+    }
+
+    ' ==========================================
+    ' BOTTOM CONTROL PLANE: HPA & KEDA
+    ' ==========================================
+    package "Elastic Horizontal Autoscaling Control Plane (Kubernetes HPA + KEDA)" as ScalePlane #FEF3C7 {
+        component "**Kubernetes HPA Controller**\nScales Stateless API Pods (3 -> 100+ Replicas across AZs)\nTriggers: CPU > 70%, Memory, Prometheus RPS & P99 Latency" as HPA #FCD34D
+        component "**KEDA Event-Driven Autoscaler**\nScales Stream Processor Pods (3 -> 64 Replicas across AZs)\nTrigger: Apache Kafka Consumer Group Lag > 5,000 msgs/partition" as KEDA #FCD34D
+    }
+
+    ' Ingress routing to all 3 AZs
+    GlobalLB -down-> ComputeA : Active Traffic (33%)
+    GlobalLB -down-> ComputeB : Active Traffic (33%)
+    GlobalLB -down-> ComputeC : Active Traffic (33%)
+
+    ' Cross-AZ Replication (Direct Horizontal Links across Aligned Tiers)
+    KafkaA <-right-> KafkaB : Kafka KRaft ISR\n(min.insync=2)
+    KafkaB <-right-> KafkaC : Kafka KRaft ISR\n(min.insync=2)
+
+    DataA <-right-> DataB : Sync Replication\n(Zero RPO Failover)
+    DataB .right.> DataC : Async Replication &\nQuorum Consensus
+
+    ' Clean Bottom Alignment to Autoscaling Control Plane
+    DataA .down.> HPA : RED & Saturation Metrics
+    DataB .down.> HPA : Pod Scaling Target
+    DataC .down.> KEDA : Kafka Lag Metrics
+}
+
+@enduml
