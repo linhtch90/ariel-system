@@ -25,3 +25,5 @@ include 'services:ariel-risk-engine'
 include 'services:ariel-ledger-service'
 include 'services:ariel-stream-processor'
 include 'services:ariel-query-service'
+
+include 'tests:ariel-load-and-chaos-tests'

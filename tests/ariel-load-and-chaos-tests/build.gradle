@@ -1,0 +1,25 @@
+plugins {
+    id 'ariel.java25-conventions'
+}
+
+dependencies {
+    testImplementation project(':libs:ariel-common-domain')
+    testImplementation project(':libs:ariel-observability-starter')
+    testImplementation project(':libs:ariel-cache-starter')
+    testImplementation project(':libs:ariel-outbox-starter')
+    testImplementation project(':services:ariel-edge-gateway')
+    testImplementation project(':services:ariel-ingestion-service')
+    testImplementation project(':services:ariel-risk-engine')
+    testImplementation project(':services:ariel-ledger-service')
+    testImplementation project(':services:ariel-stream-processor')
+    testImplementation project(':services:ariel-query-service')
+
+    testImplementation libs.spring.boot.starter.test
+}
+
+tasks.withType(Test).configureEach {
+    testLogging {
+        showStandardStreams = true
+        events "passed", "failed"
+    }
+}

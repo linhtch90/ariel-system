@@ -166,8 +166,12 @@ docker compose up -d
 ./gradlew :services:ariel-query-service:bootRun
 ./gradlew :services:ariel-edge-gateway:bootRun
 
-# 3. Run the end-to-end fast-path & idempotency verification script:
+# 4. Run the automated 10,000-request Virtual Thread Load, Limits & Chaos Engineering suite:
+./gradlew :tests:ariel-load-and-chaos-tests:test
+
+# 5. Run the smoke & idempotency verification script (or Grafana k6 autoscaling spike test):
 ./tests/load-test.sh
+# k6 run tests/k6/ariel-scale-and-chaos.js
 ```
 
 ### 6.4 Sample API Request & Response
@@ -219,6 +223,7 @@ We maintain a complete documentation suite in [`docs/`](docs/) designed so **Jun
 | **[03 — Java 25 & Spring Boot 4.1.2 Codebase Tour](docs/developer-guide/03-java25-springboot4-codebase-tour.md)** | **Junior $\rightarrow$ Staff Engineers** | Side-by-side comparisons of legacy Java vs. **Java 25 (`Virtual Threads`, `ScopedValue`, `StructuredTaskScope`, `Gatherers`, `sealed interface`)** and **Spring Boot 4.1.2 (`@HttpExchange`, `TwoTierNearCache`, `TransactionalOutbox`)**. |
 | **[04 — Extending, Maintaining & Troubleshooting Playbook](docs/developer-guide/04-extending-and-maintaining-guide.md)** | **Mid-Level $\rightarrow$ Senior / SRE** | Step-by-step recipes for adding risk checks, endpoints, zero-downtime Flyway migrations, new microservices, and troubleshooting `429`/`409`/`503`/DLQ events in production. |
 | **[05 — System Design, Project Structure, Architecture & ADRs](docs/developer-guide/05-system-design-architecture-and-adrs.md)** | **All Levels (Junior $\rightarrow$ Staff)** | Capacity math (`<15ms` latency budget breakdown), why the monorepo & packages are structured this way, CQRS/Outbox/Near-Cache architecture, and **8 Architecture Decision Records (ADRs)**. |
+| **[06 — Performance, High-Load, System Limits & Chaos Testing](docs/developer-guide/06-performance-load-and-chaos-testing.md)** | **All Levels & SREs** | How to run the **10,000-request Virtual Thread latency benchmark (`23,000+ RPS`, `<15ms P99`)**, noisy-neighbor rate-limit & bulkhead saturation tests, **4 Chaos Engineering fault-injection experiments**, and **Grafana k6 HPA/KEDA autoscaling spike tests**. |
 | **[Architecture Deep-Dive](docs/architecture/architecture-deep-dive.md)** | **Architects & Staff Engineers** | Detailed service boundary analysis, hybrid streaming/micro-batch/lakehouse architecture, and polyglot persistence matrix. |
 | **[Implementation Plan](docs/implementation_plan.md)** | **All Engineers** | The 4-phase technical specification and module dependency graph. |
 
@@ -253,7 +258,10 @@ ariel-system/
 │   └── ariel-query-service/                               # Port 8085: CQRS Read-Model Analytics & Dashboard API
 ├── deploy/k8s/                                            # Multi-AZ Kubernetes Deployments, HPA & KEDA Scalers
 ├── docker-compose.yml                                     # Local Polyglot Infrastructure (Postgres, Redis, Kafka, etc.)
-├── tests/load-test.sh                                     # End-to-End Fast-Path & Idempotency Verification Script
+├── tests/                                                 # Load, Stress, System Limits & Chaos Engineering Suites
+│   ├── ariel-load-and-chaos-tests/                        # Automated Java 25 High-Load (10k reqs), Limit & Chaos Tests
+│   ├── k6/ariel-scale-and-chaos.js                        # Grafana k6 4-Stage HPA & KEDA Autoscaling Spike Script
+│   └── load-test.sh                                       # End-to-End Fast-Path & Idempotency Verification Script
 ├── .agents/                                               # AI Subagent Personas, Procedural Skills, Rules & Prompts
 └── docs/
     ├── implementation_plan.md                             # Detailed 4-Phase Technical Implementation Plan
@@ -262,7 +270,8 @@ ariel-system/
     │   ├── 02-business-domain-and-scenarios.md
     │   ├── 03-java25-springboot4-codebase-tour.md
     │   ├── 04-extending-and-maintaining-guide.md
-    │   └── 05-system-design-architecture-and-adrs.md
+    │   ├── 05-system-design-architecture-and-adrs.md
+    │   └── 06-performance-load-and-chaos-testing.md
     └── architecture/                                      # Architecture Deep-Dive + PlantUML (.puml/.svg/.png)
         ├── architecture-deep-dive.md
         ├── system-architecture.puml
