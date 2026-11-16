@@ -109,37 +109,79 @@ All architecture diagrams are maintained as code in [`docs/architecture/`](docs/
 
 ---
 
-## 6. AI-Native Project Structure (`.agents/` & `AGENTS.md`)
+## 6. Developer & Business Documentation Hub (Junior-to-Senior Learning Path)
 
-This repository follows best practices for AI-assisted software engineering:
+Whether you are onboarding as a **Junior Developer**, understanding the business rules as a **Product/Domain Engineer**, or extending the distributed architecture as a **Senior/Staff Engineer**, start with these step-by-step guides:
+
+| Guide | Target Audience | What You Will Learn |
+| :--- | :--- | :--- |
+| **[01 — Onboarding & Quick-Start Guide](docs/developer-guide/01-onboarding-and-quickstart.md)** | **All Developers (Day 1)** | Toolchain setup, repository map, running `./gradlew clean build`, starting Docker Compose & the 6 microservices, and making your first API calls. |
+| **[02 — Business Domain, Invariants & Scenarios](docs/developer-guide/02-business-domain-and-scenarios.md)** | **Junior $\rightarrow$ Senior & Product** | The B2B2C financial & risk business model, domain glossary, the **4 Non-Negotiable Financial Invariants**, and **5 real-world user scenarios** traced line-by-line through the code. |
+| **[03 — Java 25 & Spring Boot 4.1.2 Codebase Tour](docs/developer-guide/03-java25-springboot4-codebase-tour.md)** | **Junior $\rightarrow$ Staff Engineers** | Side-by-side comparisons of legacy Java vs. **Java 25 (`Virtual Threads`, `ScopedValue`, `StructuredTaskScope`, `Gatherers`, `sealed interface`)** and **Spring Boot 4.1.2 (`@HttpExchange`, `TwoTierNearCache`, `TransactionalOutbox`)**. |
+| **[04 — Extending, Maintaining & Troubleshooting Playbook](docs/developer-guide/04-extending-and-maintaining-guide.md)** | **Mid-Level $\rightarrow$ Senior / SRE** | Cookbook recipes for adding risk checks, endpoints, zero-downtime Flyway migrations, new microservices, and troubleshooting `429`/`409`/`503`/DLQ events in production. |
+| **[Architecture Deep-Dive](docs/architecture/architecture-deep-dive.md)** | **Architects & Staff Engineers** | Deep-dive into service boundaries, streaming vs. batch trade-offs, and the polyglot persistence matrix. |
+| **[Implementation Plan](docs/implementation_plan.md)** | **All Engineers** | The 4-phase technical specification and module dependency graph. |
+
+### Quick-Start Commands
+```bash
+# 1. Compile all 10 modules (4 shared libs + 6 microservices) and run all JUnit 5 tests on Java 25:
+./gradlew clean build
+
+# 2. (Optional) Start PostgreSQL 17, Redis 8 (Valkey), Kafka (KRaft), ScyllaDB, and ClickHouse:
+docker compose up -d
+
+# 3. Run any microservice locally (with Generational ZGC & Virtual Threads enabled):
+./gradlew :services:ariel-risk-engine:bootRun
+./gradlew :services:ariel-ledger-service:bootRun
+./gradlew :services:ariel-ingestion-service:bootRun
+./gradlew :services:ariel-query-service:bootRun
+./gradlew :services:ariel-edge-gateway:bootRun
+
+# 4. Run the smoke & idempotency verification script:
+./tests/load-test.sh
+```
+
+---
+
+## 7. Repository & AI-Native Project Structure
+
+This repository combines a 10-module Gradle Groovy monorepo (`libs/` + `services/`) with AI-assisted engineering customizations (`.agents/` & `AGENTS.md`):
 
 ```text
 ariel-system/
-├── AGENTS.md                                         # Root AI Agent Constitution & Architecture Rules
-├── README.md                                         # Project Overview, Business Context & Architecture Guide
-├── .agents/
-│   ├── rules/
-│   │   └── java25-springboot4-standards.md           # Java 25, Spring Boot 4.1.2 & Gradle Groovy Rules
-│   ├── agents/                                       # Specialized AI Subagent Personas
-│   │   ├── cloud-architect.md                        # Principal Cloud-Native System Architect
-│   │   ├── java-microservice-engineer.md             # Staff Java 25 & Spring Boot 4.1.2 Engineer
-│   │   ├── data-streaming-specialist.md              # Principal Cache, Kafka & Polyglot Data Engineer
-│   │   └── sre-resilience-auditor.md                 # Principal SRE, Autoscaling & Chaos Engineer
-│   ├── skills/                                       # On-Demand Procedural Skills (SKILL.md)
-│   │   ├── scaffold-spring-service/SKILL.md          # Scaffolds Java 25 + Spring Boot 4.1.2 services
-│   │   ├── implement-caching-messaging/SKILL.md      # L1/L2 Near-Cache + Outbox + Kafka DLQ patterns
-│   │   ├── resilience-and-scaling-audit/SKILL.md     # Resilience4j + KEDA/HPA + ZGC tuning checklist
-│   │   └── plantuml-architecture-sync/SKILL.md       # Updates & renders PlantUML diagrams
-│   └── prompts/                                      # Reusable Project & Phase Prompts
-│       ├── 00-master-project-prompt.md               # Master System Prompt for Project Ariel
-│       ├── 01-bootstrap-gradle-monorepo.md           # Phase 1: Gradle Groovy Monorepo & Infra
-│       ├── 02-implement-core-services.md             # Phase 2: Fast-Path Microservices
-│       ├── 03-implement-data-and-streaming.md        # Phase 3: Kafka Streaming & Polyglot Data
-│       └── 04-load-testing-and-chaos-engineering.md  # Phase 4: K8s HPA/KEDA & Chaos Testing
+├── AGENTS.md                                              # Root AI Agent Constitution & Architecture Rules
+├── README.md                                              # Project Overview, Business Context & Documentation Hub
+├── settings.gradle / build.gradle                         # Root Gradle 9.5 Groovy DSL Multi-Project Configuration
+├── gradle/libs.versions.toml                              # Centralized Version Catalog (Spring Boot 4.1.2, Java 25)
+├── buildSrc/                                              # Shared Gradle Groovy Convention Plugins
+│   └── src/main/groovy/
+│       ├── ariel.java25-conventions.gradle                # Java 25 toolchain, --enable-preview, ZGC, JUnit Platform
+│       └── ariel.spring-boot-service.gradle               # Spring Boot 4.1.2 service conventions & actuator setup
+├── libs/                                                  # Shared Platform Libraries
+│   ├── ariel-common-domain/                               # Java 25 records, sealed RiskDecision, ScopedValue context
+│   ├── ariel-observability-starter/                       # Auto-configured correlation filter & RFC 9457 ProblemDetails
+│   ├── ariel-cache-starter/                               # L1 Caffeine + L2 Redis Near-Cache & Lua Idempotency
+│   └── ariel-outbox-starter/                              # Transactional Outbox entity, publisher & Kafka relay
+├── services/                                              # Cloud-Native Microservices
+│   ├── ariel-edge-gateway/                                # Port 8080: API Gateway, Redis Lua Rate Limiter & Routing
+│   ├── ariel-ingestion-service/                           # Port 8081: Idempotency Barrier & Fast-Path Orchestrator
+│   ├── ariel-risk-engine/                                 # Port 8082: Sub-5ms Parallel StructuredTaskScope Risk Engine
+│   ├── ariel-ledger-service/                              # Port 8083: ACID Balance, Ledger & Transactional Outbox
+│   ├── ariel-stream-processor/                            # Port 8084: Kafka Consumer, Gatherers & Polyglot Sinks
+│   └── ariel-query-service/                               # Port 8085: CQRS Read-Model Analytics & Dashboard API
+├── deploy/k8s/                                            # Multi-AZ Kubernetes Deployments, HPA & KEDA Scalers
+├── docker-compose.yml                                     # Local Polyglot Infrastructure (Postgres, Redis, Kafka, etc.)
+├── tests/load-test.sh                                     # End-to-End Fast-Path & Idempotency Verification Script
+├── .agents/                                               # AI Agents, Procedural Skills, Rules & Prompts
 └── docs/
-    ├── implementation_plan.md                        # Detailed 4-Phase Technical Implementation Plan
-    └── architecture/                                 # Architecture Deep-Dive + PlantUML (.puml/.svg/.png)
-        ├── architecture-deep-dive.md                 # Detailed Design Rationale (Streaming vs Batch, Polyglot DBs)
+    ├── implementation_plan.md                             # Detailed 4-Phase Technical Implementation Plan
+    ├── developer-guide/                                   # Junior-to-Senior Onboarding, Business & Extension Guides
+    │   ├── 01-onboarding-and-quickstart.md
+    │   ├── 02-business-domain-and-scenarios.md
+    │   ├── 03-java25-springboot4-codebase-tour.md
+    │   └── 04-extending-and-maintaining-guide.md
+    └── architecture/                                      # Architecture Deep-Dive + PlantUML (.puml/.svg/.png)
+        ├── architecture-deep-dive.md
         ├── system-architecture.puml
         ├── data-flow-sequence.puml
         └── scaling-resilience-topology.puml
