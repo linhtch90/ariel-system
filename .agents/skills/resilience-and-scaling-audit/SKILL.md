@@ -2,37 +2,36 @@
 name: resilience-and-scaling-audit
 description: >-
   Use this skill when auditing or configuring fault tolerance (Resilience4j),
-  horizontal autoscaling (Kubernetes HPA / KEDA), and high-load performance tuning.
+  horizontal autoscaling (Kubernetes HPA / KEDA), and running high-load or chaos benchmarks.
 ---
 
-# Skill: Cloud-Native Resilience & Horizontal Scaling Audit
+# Skill: Cloud-Native Resilience, Horizontal Scaling & Chaos Audit
 
-Use this checklist and configuration guide to verify that any Ariel microservice is production-ready for extreme traffic spikes and partial infrastructure failures.
+Use this checklist and reference guide to verify fault tolerance, capacity limits, and autoscaling behavior across Ariel microservices.
 
-## Step 1: Verify Resilience4j Protection Order
-Ensure external calls apply Resilience4j decorators in the standard outer-to-inner aspect order:
-`Retry ( Bulkhead ( TimeLimiter ( RateLimiter ( CircuitBreaker ( Function ) ) ) ) )`
+## 1. Reference Implementations in the Repository
+- **Perimeter Rate Limiter**: [`RedisTokenBucketRateLimiter.java`](../../../services/ariel-edge-gateway/src/main/java/io/ariel/gateway/ratelimit/RedisTokenBucketRateLimiter.java)
+- **SemaphoreBulkhead & CircuitBreaker**: [`IngestionOrchestrationUseCase.java`](../../../services/ariel-ingestion-service/src/main/java/io/ariel/ingestion/usecase/IngestionOrchestrationUseCase.java)
+- **`StructuredTaskScope` Deadline Cancellation**: [`ParallelRiskEvaluationService.java`](../../../services/ariel-risk-engine/src/main/java/io/ariel/risk/service/ParallelRiskEvaluationService.java)
+- **RFC 9457 `ProblemDetail` Error Mapping**: [`GlobalProblemDetailExceptionHandler.java`](../../../libs/ariel-observability-starter/src/main/java/io/ariel/observability/GlobalProblemDetailExceptionHandler.java)
+- **Kubernetes HPA & KEDA Manifests**:
+  - [`deploy/k8s/ariel-deployments-and-hpa.yaml`](../../../deploy/k8s/ariel-deployments-and-hpa.yaml)
+  - [`deploy/k8s/ariel-keda-kafka-scaler.yaml`](../../../deploy/k8s/ariel-keda-kafka-scaler.yaml)
 
-1. **Circuit Breaker**:
-   - `slidingWindowType: COUNT_BASED` (or `TIME_BASED`)
-   - `slidingWindowSize: 100`
-   - `failureRateThreshold: 50`
-   - `slowCallRateThreshold: 80`
-   - `slowCallDurationThreshold: 200ms`
-   - `waitDurationInOpenState: 10s`
-2. **Bulkhead**:
-   - Use **SemaphoreBulkhead** (not FixedThreadPoolBulkhead) when running on **Java 25 Virtual Threads** so virtual threads are throttled by concurrency permits without creating redundant thread pools.
-3. **Retry with Jitter**:
-   - Only retry idempotent operations and transient network/timeout errors.
-   - Use `enableRandomizedWait: true` (`randomizedWaitFactor: 0.5`) to prevent retry storms across pods.
+## 2. Resilience4j & Virtual Thread Tuning Rules
+1. **SemaphoreBulkhead (Never ThreadPoolBulkhead)**:
+   - Because services run on **Java 25 Virtual Threads**, always use `SemaphoreBulkhead` (`Bulkhead.of(...)`) to bound downstream concurrency permits (`maxConcurrentCalls: 500`) without creating redundant OS thread pools.
+2. **Benchmark Concurrency Alignment**:
+   - When writing in-process Virtual Thread load benchmarks ([`HighLoadLatencyBenchmarkTest.java`](../../../tests/ariel-load-and-chaos-tests/src/test/java/io/ariel/chaos/HighLoadLatencyBenchmarkTest.java)), bound concurrent virtual users (`new Semaphore(64)`) below the per-pod `500`-permit `SemaphoreBulkhead` so you measure sustained throughput (`>20,000 RPS`, `<15ms P99`) rather than intentionally tripping the bulkhead.
+3. **JVM Runtime Flags**:
+   - Use `--enable-preview -XX:+UseZGC` (note: in Java 25, ZGC is generational by default; do not pass the removed `-XX:+ZGenerational` flag).
 
-## Step 2: Verify Horizontal Pod Autoscaling (HPA & KEDA)
-1. **Stateless API Services (`ariel-ingestion-service`, `ariel-risk-engine`, `ariel-query-service`)**:
-   - Ensure zero local state affinity.
-   - Configure Kubernetes `HorizontalPodAutoscaler` scaling on CPU utilization (70%) and custom Prometheus metric `http_server_requests_seconds_count`.
-2. **Event Consumer Services (`ariel-stream-processor`)**:
-   - Configure a KEDA `ScaledObject` targeting the Apache Kafka consumer group lag (`lagThreshold: "5000"` per partition), scaling from `minReplicaCount: 3` up to `maxReplicaCount: <topic_partition_count>`.
-
-## Step 3: Verify JVM & Connection Pool Sizing for Scale
-- **JVM Memory & GC**: `-XX:+UseZGC -XX:+ZGenerational -XX:MaxRAMPercentage=75.0`
-- **Database Pool (HikariCP)**: Keep pool size bounded (`maximum-pool-size: 20-30` per pod) even when thousands of Virtual Threads are active, preventing PostgreSQL connection exhaustion during pod scale-out (or route through PgBouncer).
+## 3. Running Automated Load, Limits & Chaos Verification
+1. Execute the automated JVM load, limit-saturation, and 4-experiment Chaos suite:
+   ```bash
+   ./gradlew :tests:ariel-load-and-chaos-tests:test --rerun-tasks
+   ```
+2. Execute the external 4-stage Grafana k6 HPA/KEDA autoscaling spike test:
+   ```bash
+   k6 run tests/k6/ariel-scale-and-chaos.js
+   ```

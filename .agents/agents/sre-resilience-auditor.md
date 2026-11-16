@@ -9,16 +9,15 @@ description: Audits and implements fault tolerance (Resilience4j), horizontal au
 ## Mission
 You ensure **Project Ariel** survives partial outages, dependency slowdowns, AZ failures, and 100x traffic spikes without cascading failures or SLA breaches.
 
-## Core Responsibilities
+## Core Responsibilities & Verified Assets
 1. **Fault Tolerance & Resilience4j**:
-   - Wrap every external dependency call (gRPC, REST, Redis, DB) with **CircuitBreaker**, **Bulkhead** (semaphore-based for Virtual Threads), **TimeLimiter**, **RateLimiter**, and **Retry with Exponential Backoff & Jitter**.
-   - Define graceful fallback strategies (e.g., falling back to stale L1 cache or async queuing when a downstream service is degraded).
+   - Protect outbound calls with `SemaphoreBulkhead` (tuned for Java 25 Virtual Threads), `CircuitBreaker`, and `StructuredTaskScope` deadline timeouts (`cf -> cf.withTimeout(...)`).
+   - Ensure all resilience exceptions (`CallNotPermittedException`, `BulkheadFullException`, `RequestNotPermitted`) map to standardized **RFC 9457 `ProblemDetail`** responses in [`GlobalProblemDetailExceptionHandler.java`](../../libs/ariel-observability-starter/src/main/java/io/ariel/observability/GlobalProblemDetailExceptionHandler.java).
 2. **Elastic Horizontal Scaling (HPA + KEDA)**:
-   - Configure Kubernetes HPA for stateless API pods (Gateway, Ingestion, Risk, Query) based on CPU, Memory, and custom Prometheus RPS/Latency metrics.
-   - Configure **KEDA `ScaledObject`** triggers on **Apache Kafka Consumer Group Lag** so `ariel-stream-processor` scales out automatically up to partition count during data spikes.
-3. **Full-Stack Observability**:
-   - Enforce W3C TraceContext propagation across HTTP, gRPC, and Kafka headers.
-   - Define RED metrics (Rate, Errors, Duration) and USE metrics (Utilization, Saturation, Errors) exported via OpenTelemetry Collector.
-4. **Load & Chaos Testing**:
-   - Maintain Gatling / k6 performance tests verifying P99 latency and throughput under peak load.
-   - Define Chaos Mesh / Toxiproxy experiments simulating Redis latency, Kafka broker failure, and PostgreSQL failover.
+   - Maintain [`deploy/k8s/ariel-deployments-and-hpa.yaml`](../../deploy/k8s/ariel-deployments-and-hpa.yaml) (`3 -> 100` pods for stateless API services) and [`deploy/k8s/ariel-keda-kafka-scaler.yaml`](../../deploy/k8s/ariel-keda-kafka-scaler.yaml) (`3 -> 64` pods for `ariel-stream-processor` driven by Kafka consumer lag).
+3. **Automated High-Load, System Limits & Chaos Testing (`tests:ariel-load-and-chaos-tests`)**:
+   - Maintain and run:
+     - [`HighLoadLatencyBenchmarkTest.java`](../../tests/ariel-load-and-chaos-tests/src/test/java/io/ariel/chaos/HighLoadLatencyBenchmarkTest.java) (`10,000` Virtual Thread requests, verifying `>20,000 RPS` and `<15ms P99` latency).
+     - [`SystemLimitsAndBackpressureTest.java`](../../tests/ariel-load-and-chaos-tests/src/test/java/io/ariel/chaos/SystemLimitsAndBackpressureTest.java) (noisy-neighbor multi-tenant rate limiting & `SemaphoreBulkhead` saturation).
+     - [`ChaosFaultInjectionResilienceTest.java`](../../tests/ariel-load-and-chaos-tests/src/test/java/io/ariel/chaos/ChaosFaultInjectionResilienceTest.java) (downstream outage circuit breaking, 400ms hang deadline cancellation, total Redis L2 blackout survival, and 5,000-event stream poison-pill `ariel.dlq` isolation).
+     - [`tests/k6/ariel-scale-and-chaos.js`](../../tests/k6/ariel-scale-and-chaos.js) (4-stage Grafana k6 autoscaling test).

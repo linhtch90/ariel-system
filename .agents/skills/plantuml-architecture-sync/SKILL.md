@@ -10,17 +10,24 @@ description: >-
 All system design diagrams live in `docs/architecture/` as version-controlled `.puml` files alongside their rendered `.svg` and `.png` outputs.
 
 ## Diagram Inventory
-1. `docs/architecture/system-architecture.puml` — C4 Container / Component topology of Edge, Core Services, L1/L2 Cache, Kafka Backbone, Polyglot Data Stores, and Observability.
-2. `docs/architecture/data-flow-sequence.puml` — End-to-end synchronous fast path (<15ms P99) and asynchronous event streaming / OLAP ingestion sequence.
-3. `docs/architecture/scaling-resilience-topology.puml` — Multi-AZ high availability, replication, Resilience4j, and KEDA/HPA horizontal scaling topology.
+1. [`docs/architecture/system-architecture.puml`](../../../docs/architecture/system-architecture.puml) — 6-tier cloud-native architecture with explicit **Role**, **Why**, **Features**, and **Tech** inside each box.
+2. [`docs/architecture/data-flow-sequence.puml`](../../../docs/architecture/data-flow-sequence.puml) — End-to-end synchronous fast path (`<15ms P99`) and asynchronous event streaming / OLAP ingestion sequence.
+3. [`docs/architecture/scaling-resilience-topology.puml`](../../../docs/architecture/scaling-resilience-topology.puml) — 4-layer zero-repetition scaling (HPA vs KEDA), Resilience4j pipeline, and Multi-AZ HA topology.
 
-## Workflow to Update & Render Diagrams
-1. Edit the target `.puml` file in `docs/architecture/`.
-   - Note: Avoid `!theme` directives that require newer PlantUML versions if running on system PlantUML `1.2020.x`; use explicit `skinparam` blocks instead.
-   - In sequence diagrams, use `par ... else ... end` for parallel fragments.
-2. Render both SVG and PNG formats using the CLI:
+## Verified PlantUML Layout & Syntax Rules (Zero Arrow Crossings)
+1. **PlantUML `1.2020.02` Compatibility**:
+   - Do NOT use `!theme` directives (unsupported in `1.2020.02`); use explicit `skinparam` blocks at the top of the file.
+   - Use `""...""` for monospace code formatting inside labels instead of Markdown backticks (backticks render literally in PlantUML).
+   - In sequence diagrams, use `par ... else ... end` (not `and`) for parallel fragments.
+2. **Preventing Crossing Arrows & Repetition**:
+   - Use `top to bottom direction` with `skinparam nodesep 45` and `skinparam ranksep 55`.
+   - Order sibling components left-to-right within each tier to match the left-to-right order of their callers/targets in the adjacent tier (e.g., place `L1Cache` above `RiskSvc` and `L2Cache` above `IngestionSvc`) so vertical arrows never form an "X".
+   - Avoid repeating identical component boxes across AZs; instead group by architectural layer and explain **Role / Why / Features** inside each component.
+3. **Render Command (With `8192` Canvas Limit)**:
+   Always pass `-DPLANTUML_LIMIT_SIZE=8192` and run `-tsvg` and `-tpng` as separate commands (passing both flags in one call only outputs the last format):
    ```bash
-   plantuml -tsvg docs/architecture/*.puml
-   plantuml -tpng docs/architecture/*.puml
+   plantuml -DPLANTUML_LIMIT_SIZE=8192 -tsvg docs/architecture/*.puml
+   plantuml -DPLANTUML_LIMIT_SIZE=8192 -tpng docs/architecture/*.puml
    ```
-3. Verify that the command exits with code `0` and that both `.svg` and `.png` files are updated.
+4. **Visual Inspection**:
+   After rendering, read the `.png` files to visually verify there are no crossed lines, overlapping labels, or clipped borders.
