@@ -119,6 +119,7 @@ Whether you are onboarding as a **Junior Developer**, understanding the business
 | **[02 — Business Domain, Invariants & Scenarios](docs/developer-guide/02-business-domain-and-scenarios.md)** | **Junior $\rightarrow$ Senior & Product** | The B2B2C financial & risk business model, domain glossary, the **4 Non-Negotiable Financial Invariants**, and **5 real-world user scenarios** traced line-by-line through the code. |
 | **[03 — Java 25 & Spring Boot 4.1.2 Codebase Tour](docs/developer-guide/03-java25-springboot4-codebase-tour.md)** | **Junior $\rightarrow$ Staff Engineers** | Side-by-side comparisons of legacy Java vs. **Java 25 (`Virtual Threads`, `ScopedValue`, `StructuredTaskScope`, `Gatherers`, `sealed interface`)** and **Spring Boot 4.1.2 (`@HttpExchange`, `TwoTierNearCache`, `TransactionalOutbox`)**. |
 | **[04 — Extending, Maintaining & Troubleshooting Playbook](docs/developer-guide/04-extending-and-maintaining-guide.md)** | **Mid-Level $\rightarrow$ Senior / SRE** | Cookbook recipes for adding risk checks, endpoints, zero-downtime Flyway migrations, new microservices, and troubleshooting `429`/`409`/`503`/DLQ events in production. |
+| **[05 — System Design, Project Structure, Architecture & ADRs](docs/developer-guide/05-system-design-architecture-and-adrs.md)** | **All Levels (Junior $\rightarrow$ Staff)** | Capacity math (`<15ms` latency budget breakdown), why the monorepo & packages are structured this way, CQRS/Outbox/Near-Cache architecture, and **8 Architecture Decision Records (ADRs)** explaining the reasons and trade-offs for every technical choice. |
 | **[Architecture Deep-Dive](docs/architecture/architecture-deep-dive.md)** | **Architects & Staff Engineers** | Deep-dive into service boundaries, streaming vs. batch trade-offs, and the polyglot persistence matrix. |
 | **[Implementation Plan](docs/implementation_plan.md)** | **All Engineers** | The 4-phase technical specification and module dependency graph. |
 
@@ -179,7 +180,8 @@ ariel-system/
     │   ├── 01-onboarding-and-quickstart.md
     │   ├── 02-business-domain-and-scenarios.md
     │   ├── 03-java25-springboot4-codebase-tour.md
-    │   └── 04-extending-and-maintaining-guide.md
+    │   ├── 04-extending-and-maintaining-guide.md
+    │   └── 05-system-design-architecture-and-adrs.md
     └── architecture/                                      # Architecture Deep-Dive + PlantUML (.puml/.svg/.png)
         ├── architecture-deep-dive.md
         ├── system-architecture.puml
