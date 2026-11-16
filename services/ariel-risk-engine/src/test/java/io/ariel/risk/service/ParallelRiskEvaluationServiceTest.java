@@ -13,8 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ParallelRiskEvaluationServiceTest {
 
+    private final TwoTierNearCache nearCache = new TwoTierNearCache(
+            null, 1000, Duration.ofMinutes(1), Duration.ofMinutes(10)
+    );
+
     private final ParallelRiskEvaluationService service = new ParallelRiskEvaluationService(
-            new TwoTierNearCache(null, 1000, Duration.ofMinutes(1), Duration.ofMinutes(10)),
+            nearCache,
             new StaticListableBeanFactory().getBeanProvider(StringRedisTemplate.class),
             100L
     );
@@ -51,5 +55,22 @@ class ParallelRiskEvaluationServiceTest {
 
         RiskDecision decision = service.evaluate(req);
         assertThat(decision).isInstanceOf(RiskDecision.Rejected.class);
+    }
+
+    @Test
+    void escalatesScoreWhenTenantIsRestrictedAndAccountVelocitySpikesWithMissingDeviceFingerprint() {
+        nearCache.put("ariel:rules:tenant:tenant-restricted", "RESTRICTED_TIER");
+
+        // Accumulate > $500,000 velocity on the same account with missing device fingerprint
+        RiskDecision finalDecision = null;
+        for (int i = 0; i < 15; i++) {
+            finalDecision = service.evaluate(new RiskEvaluationRequest(
+                    "corr-vel-" + i, "tenant-restricted", "acc-velocity-spike", "merchant-1",
+                    new BigDecimal("45000.00"), "USD", "SANCTIONED_REGION", ""
+            ));
+        }
+
+        assertThat(finalDecision).isInstanceOf(RiskDecision.Rejected.class);
+        assertThat(finalDecision.riskScore()).isGreaterThanOrEqualTo(0.85);
     }
 }

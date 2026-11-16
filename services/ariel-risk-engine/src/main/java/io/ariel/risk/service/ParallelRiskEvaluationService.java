@@ -146,6 +146,9 @@ public class ParallelRiskEvaluationService {
         if (request.amount().compareTo(new BigDecimal("25000.00")) > 0) {
             score += 0.35;
         }
+        if ("SANCTIONED_REGION".equalsIgnoreCase(request.region())) {
+            score += 0.35;
+        }
         return Math.min(1.0, score);
     }
 }
