@@ -1,0 +1,16 @@
+plugins {
+    id 'ariel.java25-conventions'
+}
+
+dependencies {
+    api project(':libs:ariel-common-domain')
+    api libs.spring.boot.starter.webmvc
+    api libs.spring.boot.starter.restclient
+    api libs.spring.boot.starter.actuator
+    api libs.spring.boot.starter.opentelemetry
+    api libs.resilience4j.circuitbreaker
+    api libs.resilience4j.bulkhead
+    api libs.resilience4j.ratelimiter
+
+    testImplementation libs.spring.boot.starter.test
+}

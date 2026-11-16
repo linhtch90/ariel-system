@@ -1,0 +1,12 @@
+plugins {
+    id 'ariel.spring-boot-service'
+}
+
+dependencies {
+    implementation project(':libs:ariel-common-domain')
+    implementation project(':libs:ariel-observability-starter')
+    implementation project(':libs:ariel-cache-starter')
+    implementation libs.spring.boot.starter.kafka
+    implementation libs.resilience4j.retry
+    implementation libs.resilience4j.circuitbreaker
+}

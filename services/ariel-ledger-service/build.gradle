@@ -1,0 +1,16 @@
+plugins {
+    id 'ariel.spring-boot-service'
+}
+
+dependencies {
+    implementation project(':libs:ariel-common-domain')
+    implementation project(':libs:ariel-observability-starter')
+    implementation project(':libs:ariel-outbox-starter')
+    implementation libs.spring.boot.starter.data.jpa
+    implementation libs.spring.boot.starter.flyway
+    runtimeOnly libs.postgresql
+    runtimeOnly libs.flyway.database.postgresql
+    runtimeOnly libs.h2
+
+    testImplementation libs.h2
+}

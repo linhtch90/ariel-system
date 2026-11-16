@@ -1,0 +1,27 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'ariel-system'
+
+include 'libs:ariel-common-domain'
+include 'libs:ariel-observability-starter'
+include 'libs:ariel-cache-starter'
+include 'libs:ariel-outbox-starter'
+
+include 'services:ariel-edge-gateway'
+include 'services:ariel-ingestion-service'
+include 'services:ariel-risk-engine'
+include 'services:ariel-ledger-service'
+include 'services:ariel-stream-processor'
+include 'services:ariel-query-service'

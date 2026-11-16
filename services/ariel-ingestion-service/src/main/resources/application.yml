@@ -1,0 +1,32 @@
+server:
+  port: 8081
+  shutdown: graceful
+
+spring:
+  application:
+    name: ariel-ingestion-service
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+ariel:
+  services:
+    risk-url: ${RISK_SERVICE_URL:http://localhost:8082}
+    ledger-url: ${LEDGER_SERVICE_URL:http://localhost:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always

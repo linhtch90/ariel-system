@@ -1,0 +1,20 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ariel-stream-processor-kafka-scaler
+  namespace: ariel-prod
+spec:
+  scaleTargetRef:
+    name: ariel-stream-processor
+  pollingInterval: 10
+  cooldownPeriod: 180
+  minReplicaCount: 3
+  maxReplicaCount: 64
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: ariel-kafka.ariel-prod.svc.cluster.local:9092
+        consumerGroup: ariel-stream-processor-group
+        topic: ariel.transactions.validated
+        lagThreshold: "5000"
+        offsetResetPolicy: latest

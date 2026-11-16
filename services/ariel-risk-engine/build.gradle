@@ -1,0 +1,9 @@
+plugins {
+    id 'ariel.spring-boot-service'
+}
+
+dependencies {
+    implementation project(':libs:ariel-common-domain')
+    implementation project(':libs:ariel-observability-starter')
+    implementation project(':libs:ariel-cache-starter')
+}
