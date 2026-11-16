@@ -178,3 +178,5 @@ curl -s http://localhost:8081/actuator/prometheus | head -n 30
 - **Understand the Business Domain**: Read [02-business-domain-and-scenarios.md](02-business-domain-and-scenarios.md).
 - **Learn the Java 25 & Spring Boot 4.1.2 Code**: Read [03-java25-springboot4-codebase-tour.md](03-java25-springboot4-codebase-tour.md).
 - **Add Features & Maintain the System**: Read [04-extending-and-maintaining-guide.md](04-extending-and-maintaining-guide.md).
+- **Understand System Design, Project Structure & ADRs**: Read [05-system-design-architecture-and-adrs.md](05-system-design-architecture-and-adrs.md).
+- **Work with Unit, Integration, Load & Chaos Tests**: Read [06-performance-load-and-chaos-testing.md](06-performance-load-and-chaos-testing.md).
